@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Modal, TextInput, TouchableOpacity, Alert, FlatList } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, FlatList } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { Checkbox } from 'react-native-paper'; // Use react-native-paper Checkbox
+import { Checkbox } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function App() {
-  const [modalVisible, setModalVisible] = useState(false);
   const [medication, setMedication] = useState('');
   const [reminders, setReminders] = useState([]);
   const [notificationTime, setNotificationTime] = useState(new Date());
@@ -47,7 +46,6 @@ export default function App() {
       return;
     }
 
-    // Schedule the notification
     Notifications.scheduleNotificationAsync({
       content: {
         title: "Medication Reminder",
@@ -58,15 +56,14 @@ export default function App() {
       },
     });
 
-    // Add the reminder to the list
+    const time = notificationTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     setReminders(prevReminders => [
       ...prevReminders,
-      { id: Date.now(), name: medication, completed: false, time: notificationTime.toLocaleTimeString() }
+      { id: Date.now(), name: medication, completed: false, time }
     ]);
 
-    // Reset the state
     setMedication('');
-    setModalVisible(false);
     setShowTimePicker(false);
   };
 
@@ -80,59 +77,44 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Medication Reminder App</Text>
+      <Text style={styles.title}>Reminders</Text>
 
-      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-        <Text style={styles.buttonText}>Add Alert</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="What medication do you want to add?"
+        placeholderTextColor="#ccc"
+        value={medication}
+        onChangeText={setMedication}
+      />
+      
+      <TouchableOpacity 
+        style={styles.timeButton} 
+        onPress={() => setShowTimePicker(true)} // Show time picker directly
+      >
+        <Text style={styles.buttonText}>
+          Set Reminder
+        </Text>
       </TouchableOpacity>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Medication Alert</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="What medication do you want to add?"
-              placeholderTextColor="#aaa"
-              value={medication}
-              onChangeText={setMedication}
-            />
-            
-            <TouchableOpacity style={styles.timeButton} onPress={() => setShowTimePicker(true)}>
-              <Text style={styles.buttonText}>
-                Set Notification Time: {notificationTime.toLocaleTimeString()}
-              </Text>
-            </TouchableOpacity>
+      {showTimePicker && (
+        <DateTimePicker
+          value={notificationTime}
+          mode="time"
+          is24Hour={true}
+          display="default"
+          onChange={(event, selectedDate) => {
+            const currentDate = selectedDate || notificationTime;
+            setShowTimePicker(false);
+            setNotificationTime(currentDate);
+          }}
+        />
+      )}
 
-            {showTimePicker && (
-              <DateTimePicker
-                value={notificationTime}
-                mode="time"
-                is24Hour={true}
-                display="default"
-                onChange={(event, selectedDate) => {
-                  const currentDate = selectedDate || notificationTime;
-                  setShowTimePicker(false);
-                  setNotificationTime(currentDate);
-                }}
-              />
-            )}
+      <TouchableOpacity style={styles.saveButton} onPress={scheduleNotification}>
+        <Text style={styles.buttonText}>Save Alert</Text>
+      </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveButton} onPress={scheduleNotification}>
-              <Text style={styles.buttonText}>Save Alert</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.buttonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      {reminders.length > 0 && <Text style={styles.upcomingAlertsTitle}>Upcoming Alerts</Text>}
 
       <FlatList
         data={reminders}
@@ -142,6 +124,7 @@ export default function App() {
             <Checkbox
               status={item.completed ? 'checked' : 'unchecked'}
               onPress={() => toggleCompletion(item.id)}
+              color="#32cd32"
             />
             <Text style={[styles.reminderText, item.completed && styles.completed]}>
               {item.name} - {item.time}
@@ -157,65 +140,29 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#161622', // Blackish background
+    backgroundColor: '#161622',
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
-    color: 'white', // White text for contrast
-    marginBottom: 20,
-  },
-  addButton: {
-    backgroundColor: '#32cd32', // Vibrant green button
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    shadowColor: '#32cd32', // Green shadow effect
-    shadowOpacity: 0.5,
-    shadowOffset: { width: 2, height: 4 },
-    shadowRadius: 10,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.8)', // Dark translucent background
-  },
-  modalContent: {
-    backgroundColor: '#1f1f2e', // Dark grayish modal background
-    borderRadius: 20,
-    padding: 30,
-    width: 300,
-    alignItems: 'center',
-    shadowColor: '#000', // Subtle shadow
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
-  },
-  modalTitle: {
-    fontSize: 22,
-    color: '#fff', // White text
-    fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#90EE90',
+    marginTop: 50,
+    marginBottom: 30,
   },
   input: {
-    backgroundColor: '#272734', // Darker input field
-    color: 'white', // White text
+    backgroundColor: '#272734',
+    color: 'white',
     padding: 10,
     borderRadius: 10,
     width: '100%',
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#90EE90',
   },
   timeButton: {
-    backgroundColor: '#32cd32', // Green button for time selection
+    backgroundColor: '#90EE90',
     padding: 10,
     borderRadius: 10,
     marginBottom: 20,
@@ -223,19 +170,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButton: {
-    backgroundColor: '#32cd32', // Save button in green
+    backgroundColor: '#90EE90',
     padding: 15,
     borderRadius: 10,
     width: '100%',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 20,
   },
-  closeButton: {
-    backgroundColor: '#444', // Subtle close button
-    padding: 15,
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
+  buttonText: {
+    color: 'black',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  upcomingAlertsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#90EE90',
+    marginTop: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
   },
   reminderList: {
     width: '100%',
@@ -244,19 +197,19 @@ const styles = StyleSheet.create({
   reminderItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#272734', // Background for list items
+    backgroundColor: '#272734',
     padding: 10,
     borderRadius: 10,
     marginBottom: 10,
   },
   reminderText: {
-    color: 'white', // White text for list items
+    color: 'white',
     fontSize: 16,
     flex: 1,
     marginLeft: 10,
   },
   completed: {
-    textDecorationLine: 'line-through', // Strike-through for completed reminders
-    color: '#aaa', // Grayed-out completed items
+    textDecorationLine: 'line-through',
+    color: '#aaa',
   },
 });

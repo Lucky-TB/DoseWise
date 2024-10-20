@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as GoogleGenerativeAI from "@google/generative-ai";
+import { useRoute } from '@react-navigation/native'; 
 import {
   View,
   Text,
@@ -8,10 +9,12 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StatusBar as RNStatusBar,
+  Modal,
+  Animated,
+  StyleSheet,
 } from "react-native";
 import { FontAwesome } from "@expo/vector-icons";
 import FlashMessage, { showMessage } from "react-native-flash-message";
-import { StatusBar } from 'expo-status-bar';
 import { GEMINI_API_KEY } from '@env';
 
 const GeminiChat = () => {
@@ -19,6 +22,30 @@ const GeminiChat = () => {
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef(null);
+  
+  const [modalVisible, setModalVisible] = useState(false);
+  const [scaleAnim] = useState(new Animated.Value(0));
+
+  const route = useRoute(); 
+  
+  const openModal = () => {
+    setModalVisible(true);
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeModal = () => {
+      setModalVisible(false);
+  };
+
+  useEffect(() => {
+    if (route.params?.showModal) {
+      openModal();
+    }
+  }, [route.params]);
 
   useEffect(() => {
     const startChat = async () => {
@@ -68,7 +95,6 @@ const GeminiChat = () => {
       const userMessage = { text: userInput, user: true };
       setMessages((prevMessages) => [...prevMessages, userMessage]);
 
-      
       if (!userInput || userInput.trim().length < 2) {
         const errorMessage = { text: "Sorry, I didn't understand that.", user: false };
         setMessages((prevMessages) => [...prevMessages, errorMessage]);
@@ -126,19 +152,25 @@ const GeminiChat = () => {
 
   const renderMessage = ({ item }) => (
     <View
-      className={`p-3 my-1 rounded-lg shadow-sm ${
-        item.user ? "bg-[#90EE90] self-end" : "bg-[#232533] self-start"
-      } max-w-[80%]`}
-      style={{ marginHorizontal: 0 }}
+      style={[
+        styles.messageBubble,
+        item.user ? styles.userBubble : styles.botBubble,
+      ]}
     >
-      <Text className={`${item.user ? "text-[#161622]" : "text-gray-400"} text-lg`}>
+      <Text
+        style={[
+          styles.messageText,
+          item.user ? styles.userText : styles.botText,
+        ]}
+        numberOfLines={5} // Limit to 5 lines (adjust as needed)
+      >
         {item.text}
       </Text>
     </View>
   );
 
   return (
-    <View className="flex-1 items-center justify-center bg-[#161622] p-4">
+    <View style={styles.container}>
       <RNStatusBar 
         barStyle="light-content" 
         backgroundColor='#161622' 
@@ -149,27 +181,141 @@ const GeminiChat = () => {
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item, index) => index.toString()}
-        className="flex-1 mb-16 pt-10 pb-4"
         contentContainerStyle={{ paddingBottom: 10 }}
+        style={{ flexGrow: 1, paddingTop:50 }} // Allow the FlatList to grow
       />
-      <View className="flex-row items-center bg-[#232533] p-3 rounded-full shadow-md">
+      <View style={styles.inputContainer}>
         <TextInput
           placeholder="Type a message"
           onChangeText={setUserInput}
           value={userInput}
-          className="flex-1 mx-3 p-3 bg-[#d3e1d1] rounded-full shadow-sm text-gray-800 placeholder-gray-500"
+          style={styles.input}
           placeholderTextColor="#aaa"
         />
         <TouchableOpacity
-          className="bg-[#90EE90] p-3 rounded-full shadow-md"
+          style={styles.sendButton}
           onPress={sendMessage}
         >
           <FontAwesome name="paper-plane" size={24} color="black" />
         </TouchableOpacity>
-        {loading && <ActivityIndicator size="large" color="#4B5563" className="ml-2"/>}
+        {loading && <ActivityIndicator size="large" color="#4B5563" style={styles.loadingIndicator}/>}
       </View>
+
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        animationType="none"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleAnim }] }]}>
+            <Text style={styles.modalTitle}>Scan Barcode</Text>
+            <Text style={styles.modalText}>Camera functionality can be added here.</Text>
+
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.buttonText}>Close</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#161622',
+    padding: 10,
+    justifyContent: 'center',
+  },
+  messageBubble: {
+    padding: 10,
+    borderRadius: 20,
+    marginVertical: 5,
+    maxWidth: '90%',  // Maintain max width
+    alignSelf: 'stretch', // Stretch the bubble across available width
+    overflow: 'hidden', // Ensure any overflowing text is hidden
+  },
+  userBubble: {
+    backgroundColor: '#90EE90',
+    alignSelf: 'flex-end', // Align user messages to the right
+  },
+  botBubble: {
+    backgroundColor: '#232533',
+    alignSelf: 'flex-start', // Align bot messages to the left
+  },
+  messageText: {
+    fontSize: 16,
+    lineHeight: 20,
+    color: 'white', // Default text color for better visibility
+    flexWrap: 'wrap', // Allow text to wrap
+  },
+  userText: {
+    color: '#161622',
+  },
+  botText: {
+    color: 'gray',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#232533',
+    paddingVertical: 15, // Increase vertical padding
+    paddingHorizontal: 10,
+    borderRadius: 30,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 5 },
+    shadowRadius: 10,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: '#d3e1d1',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    color: '#333',
+    height: 40, // Set a specific height for the input box
+  },
+  sendButton: {
+    backgroundColor: '#90EE90',
+    padding: 10,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  loadingIndicator: {
+    marginLeft: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  closeButton: {
+    backgroundColor: '#4B5563',
+    padding: 10,
+    borderRadius: 10,
+  },
+  buttonText: {
+    color: '#fff',
+  },
+});
 
 export default GeminiChat;
