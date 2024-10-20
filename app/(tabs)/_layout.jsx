@@ -62,7 +62,7 @@ const TabsLayout = () => {
           ),
         }}
       />
-      <Tabs.Screen
+      {/*<Tabs.Screen
         name="history"
         options={{
           title: 'History',
@@ -76,7 +76,7 @@ const TabsLayout = () => {
             />
           ),
         }}
-      />
+      />*/}
       <Tabs.Screen
         name="reminder"
         options={{

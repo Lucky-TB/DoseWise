@@ -1,12 +1,14 @@
-import { View, Text } from 'react-native'
+{/*import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
-const SproutAI = () => {
+const Links = () => {
   return (
     <View>
-      <Text>SproutAI</Text>
+      <Text>Links</Text>
     </View>
   )
 }
 
-export default SproutAI
+export default Links
+
+const styles = StyleSheet.create({})*/}

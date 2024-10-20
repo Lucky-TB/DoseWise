@@ -10,7 +10,6 @@ export default function App() {
   const [notificationTime, setNotificationTime] = useState(new Date());
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  // Set notification handler to allow notifications in the foreground (iOS specific)
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,

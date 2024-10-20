@@ -32,11 +32,6 @@
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "notification": {
-      "iosDisplayInForeground": true,
-      "androidMode": "default",
-      "iosCollapsedTitle": "Medication Reminder"
     }
   }
 }
