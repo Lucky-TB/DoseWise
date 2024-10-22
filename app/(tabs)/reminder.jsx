@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, FlatList } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { Checkbox } from 'react-native-paper';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 export default function App() {
   const [medication, setMedication] = useState('');
   const [reminders, setReminders] = useState([]);
   const [notificationTime, setNotificationTime] = useState(new Date());
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isTimePickerVisible, setTimePickerVisibility] = useState(false);
 
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -63,7 +63,7 @@ export default function App() {
     ]);
 
     setMedication('');
-    setShowTimePicker(false);
+    setTimePickerVisibility(false);
   };
 
   const toggleCompletion = (id) => {
@@ -88,26 +88,22 @@ export default function App() {
       
       <TouchableOpacity 
         style={styles.timeButton} 
-        onPress={() => setShowTimePicker(true)} // Show time picker directly
+        onPress={() => setTimePickerVisibility(true)} // Open time picker directly
       >
         <Text style={styles.buttonText}>
           Set Reminder
         </Text>
       </TouchableOpacity>
 
-      {showTimePicker && (
-        <DateTimePicker
-          value={notificationTime}
-          mode="time"
-          is24Hour={true}
-          display="default"
-          onChange={(event, selectedDate) => {
-            const currentDate = selectedDate || notificationTime;
-            setShowTimePicker(false);
-            setNotificationTime(currentDate);
-          }}
-        />
-      )}
+      <DateTimePickerModal
+        isVisible={isTimePickerVisible}
+        mode="time"
+        onConfirm={(selectedDate) => {
+          setNotificationTime(selectedDate);
+          setTimePickerVisibility(false);
+        }}
+        onCancel={() => setTimePickerVisibility(false)}
+      />
 
       <TouchableOpacity style={styles.saveButton} onPress={scheduleNotification}>
         <Text style={styles.buttonText}>Save Alert</Text>
@@ -146,8 +142,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#90EE90',
-    marginTop: 50,
+    color: '#71c9ce',
+    marginTop: 200,
     marginBottom: 30,
   },
   input: {
@@ -158,10 +154,10 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#90EE90',
+    borderColor: '#71c9ce',
   },
   timeButton: {
-    backgroundColor: '#90EE90',
+    backgroundColor: '#71c9ce',
     padding: 10,
     borderRadius: 10,
     marginBottom: 20,
@@ -169,7 +165,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveButton: {
-    backgroundColor: '#90EE90',
+    backgroundColor: '#71c9ce',
     padding: 15,
     borderRadius: 10,
     width: '100%',
@@ -184,7 +180,7 @@ const styles = StyleSheet.create({
   upcomingAlertsTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#90EE90',
+    color: '#71c9ce',
     marginTop: 20,
     alignSelf: 'flex-start',
     marginBottom: 10,

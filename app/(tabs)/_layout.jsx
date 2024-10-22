@@ -3,11 +3,18 @@ import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-const TabIcon = ({ icon, color, name, focused }) => {
+const TabIcon = ({ iconName, color, name, focused }) => {
   return (
     <View className="items-center justify-center gap-2 mt-4">
-      {icon}
-      <Text className={`${focused ? 'font-psemibold pt-1' : 'font-pregular'} text-xs`} style={{ color: color, fontSize: focused ? 15 : 12 }}>
+      <MaterialCommunityIcons
+        name={iconName}
+        size={focused ? 28 : 24} // Increase size when focused
+        color={color}
+      />
+      <Text
+        className={`${focused ? 'font-psemibold pt-1' : 'font-pregular'} text-xs`}
+        style={{ color: color, fontSize: focused ? 14 : 12 }}
+      >
         {name}
       </Text>
     </View>
@@ -19,7 +26,7 @@ const TabsLayout = () => {
     <Tabs
       screenOptions={{
         tabBarShowLabel: false,
-        tabBarActiveTintColor: '#90EE90',
+        tabBarActiveTintColor: '#71c9ce',
         tabBarInactiveTintColor: '#CDCDE0',
         tabBarStyle: {
           backgroundColor: '#161622',
@@ -39,7 +46,7 @@ const TabsLayout = () => {
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={<MaterialCommunityIcons name="home" size={24} color={color} />}
+              iconName="home"
               color={color}
               name="Home"
               focused={focused}
@@ -47,31 +54,16 @@ const TabsLayout = () => {
           ),
         }}
       />
-      <Tabs.Screen
+      {/*<Tabs.Screen
         name="verify"
         options={{
           title: 'Verify',
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={<MaterialCommunityIcons name="check-circle" size={24} color={color} />}
+              iconName="check-circle"
               color={color}
               name="Verify"
-              focused={focused}
-            />
-          ),
-        }}
-      />
-      {/*<Tabs.Screen
-        name="history"
-        options={{
-          title: 'History',
-          headerShown: false,
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon
-              icon={<MaterialCommunityIcons name="history" size={24} color={color} />}
-              color={color}
-              name="History"
               focused={focused}
             />
           ),
@@ -84,7 +76,7 @@ const TabsLayout = () => {
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={<MaterialCommunityIcons name="alarm" size={24} color={color} />}
+              iconName="alarm"
               color={color}
               name="Reminder"
               focused={focused}
@@ -99,7 +91,7 @@ const TabsLayout = () => {
           headerShown: false,
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              icon={<MaterialCommunityIcons name="pill" size={24} color={color} />}
+              iconName="pill"
               color={color}
               name="Medi"
               focused={focused}
@@ -107,6 +99,21 @@ const TabsLayout = () => {
           ),
         }}
       />
+      {/*<Tabs.Screen
+        name="test"
+        options={{
+          title: 'test',
+          headerShown: false,
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              iconName="pill"
+              color={color}
+              name="test"
+              focused={focused}
+            />
+          ),
+        }}
+      />*/}
     </Tabs>
   );
 };

@@ -18,14 +18,14 @@ const CustomButton = ({ title, handlePress, containerStyles, textStyles, isLoadi
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: 'lightgreen',
+    backgroundColor: '#71c9ce',
     borderRadius: 10,
     minHeight: 60,
     justifyContent: 'center',
     alignItems: 'center',
   },
   text: {
-    color: 'primary', // Adjust color as needed
+    color: '#162f36', // Adjust color as needed
     fontWeight: '600',
     fontSize: 18,
   },

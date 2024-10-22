@@ -24,6 +24,10 @@ const GeminiChat = () => {
   const flatListRef = useRef(null);
   
   const [modalVisible, setModalVisible] = useState(false);
+  const [drugName, setDrugName] = useState("");
+  const [Allergies, setAllergies] = useState("");
+  const [Symptoms, setSymptoms] = useState("");
+  const [Disease, setDisease] = useState("");
   const [scaleAnim] = useState(new Animated.Value(0));
 
   const route = useRoute(); 
@@ -150,6 +154,69 @@ const GeminiChat = () => {
     }
   };
 
+  const sendModalInfo = async () => {
+    closeModal(); // Close the modal after sending the info
+
+    const combinedMessage = `
+      Take this information and tell the user if this is the best drug the user should take. Give it information about the disease and drug and finally be caring and helpful
+      Drug The User is Taking: ${drugName}
+      Disease: ${Disease}
+      Symptoms: ${Symptoms}
+      Allergies: ${Allergies}
+    `;
+
+    // Do not show the combined message in the chat
+    try {
+      const genAI = new GoogleGenerativeAI.GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+      const fetchContent = async (retries = 3) => {
+        try {
+          const result = await model.generateContent(combinedMessage);
+
+          if (result && result.response) {
+            const text = result.response.text ? result.response.text() : "No response available.";
+            // Append the response to messages without showing the combined message
+            setMessages((prevMessages) => [...prevMessages, { text, user: false }]);
+          } else {
+            console.error("Response is undefined or does not have the expected structure", result);
+            showMessage({
+              message: "Error",
+              description: "Failed to generate a response. Please try again.",
+              type: "danger",
+            });
+          }
+        } catch (error) {
+          if (error.message.includes("503") && retries > 0) {
+            console.log(`Retrying... Attempts left: ${retries}`);
+            setTimeout(() => fetchContent(retries - 1), 2000);
+          } else {
+            console.error("Error in fetchContent:", error);
+            showMessage({
+              message: "Error",
+              description: "The service is currently overloaded. Please try again later.",
+              type: "danger",
+            });
+          }
+        }
+      };
+
+      await fetchContent();
+    } catch (error) {
+      console.error("Error in sendModalInfo:", error);
+      showMessage({
+        message: "Error",
+        description: "An error occurred while sending the modal information.",
+        type: "danger",
+      });
+    } finally {
+      setAllergies(""); // Reset inputs after sending
+      setSymptoms("");
+      setDisease("");
+      setDrugName("");
+    }
+  };
+
   const renderMessage = ({ item }) => (
     <View
       style={[
@@ -162,7 +229,8 @@ const GeminiChat = () => {
           styles.messageText,
           item.user ? styles.userText : styles.botText,
         ]}
-        numberOfLines={5} // Limit to 5 lines (adjust as needed)
+        // Allow multiple lines for the chatbot's response
+        numberOfLines={0} 
       >
         {item.text}
       </Text>
@@ -198,26 +266,52 @@ const GeminiChat = () => {
         >
           <FontAwesome name="paper-plane" size={24} color="black" />
         </TouchableOpacity>
-        {loading && <ActivityIndicator size="large" color="#4B5563" style={styles.loadingIndicator}/>}
+        {loading && <ActivityIndicator size="large" color="#4B5563" style={styles.loadingIndicator} />}
       </View>
 
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        animationType="none"
-        onRequestClose={closeModal}
-      >
+      <Modal animationType="slide" visible={modalVisible} transparent>
         <View style={styles.modalOverlay}>
-          <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleAnim }] }]}>
-            <Text style={styles.modalTitle}>Scan Barcode</Text>
-            <Text style={styles.modalText}>Camera functionality can be added here.</Text>
-
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Text style={styles.buttonText}>Close</Text>
-            </TouchableOpacity>
+          <Animated.View style={[styles.modalContainer, { transform: [{ scale: scaleAnim }] }]}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Enter Drug Information</Text>
+              <TextInput
+                placeholder="Drug Name"
+                value={drugName}
+                onChangeText={setDrugName}
+                style={styles.modalInput}
+              />
+              <TextInput
+                placeholder="Allergies"
+                value={Allergies}
+                onChangeText={setAllergies}
+                style={styles.modalInput}
+              />
+              <TextInput
+                placeholder="Symptoms"
+                value={Symptoms}
+                onChangeText={setSymptoms}
+                style={styles.modalInput}
+              />
+              <TextInput
+                placeholder="Disease"
+                value={Disease}
+                onChangeText={setDisease}
+                style={styles.modalInput}
+              />
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={sendModalInfo}
+              >
+                <Text style={styles.submitButtonText}>Submit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
         </View>
       </Modal>
+      <FlashMessage position="top" />
     </View>
   );
 };
@@ -225,96 +319,94 @@ const GeminiChat = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#161622',
-    padding: 10,
-    justifyContent: 'center',
-  },
-  messageBubble: {
-    padding: 10,
-    borderRadius: 20,
-    marginVertical: 5,
-    maxWidth: '90%',  // Maintain max width
-    alignSelf: 'stretch', // Stretch the bubble across available width
-    overflow: 'hidden', // Ensure any overflowing text is hidden
-  },
-  userBubble: {
-    backgroundColor: '#90EE90',
-    alignSelf: 'flex-end', // Align user messages to the right
-  },
-  botBubble: {
-    backgroundColor: '#232533',
-    alignSelf: 'flex-start', // Align bot messages to the left
-  },
-  messageText: {
-    fontSize: 16,
-    lineHeight: 20,
-    color: 'white', // Default text color for better visibility
-    flexWrap: 'wrap', // Allow text to wrap
-  },
-  userText: {
-    color: '#161622',
-  },
-  botText: {
-    color: 'gray',
+    backgroundColor: "#161622",
+    paddingHorizontal: 20,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#232533',
-    paddingVertical: 15, // Increase vertical padding
-    paddingHorizontal: 10,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: '#d3e1d1',
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
     borderRadius: 20,
     paddingHorizontal: 15,
-    color: '#333',
-    height: 40, // Set a specific height for the input box
+    backgroundColor: "white",
+    marginRight: 10,
   },
   sendButton: {
-    backgroundColor: '#90EE90',
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  messageBubble: {
+    marginVertical: 5,
     padding: 10,
-    borderRadius: 20,
-    marginLeft: 10,
+    borderRadius: 10,
+    maxWidth: "80%",
+  },
+  userBubble: {
+    backgroundColor: "#4B5563",
+    alignSelf: "flex-end",
+  },
+  botBubble: {
+    backgroundColor: "#2C2A38",
+    alignSelf: "flex-start",
+  },
+  messageText: {
+    color: "#fff",
   },
   loadingIndicator: {
-    marginLeft: 10,
+    position: "absolute",
+    right: 10,
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContainer: {
+    width: "90%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
   },
   modalContent: {
-    width: '80%',
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
+    width: "100%",
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: "bold",
     marginBottom: 10,
   },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
+  modalInput: {
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    width: "100%",
+  },
+  submitButton: {
+    backgroundColor: "#4B5563",
+    borderRadius: 10,
+    padding: 10,
+    width: "100%",
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
   closeButton: {
-    backgroundColor: '#4B5563',
-    padding: 10,
-    borderRadius: 10,
+    marginTop: 10,
   },
-  buttonText: {
-    color: '#fff',
+  closeButtonText: {
+    color: "#4B5563",
   },
 });
 
